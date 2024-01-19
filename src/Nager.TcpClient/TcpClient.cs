@@ -2,7 +2,10 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.IO;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,8 +28,13 @@ namespace Nager.TcpClient
 
         private System.Net.Sockets.TcpClient? _tcpClient;
         private bool _tcpClientInitialized;
-        private Stream? _stream;
+        private Stream? _rawStream;
         private bool _isConnected;
+
+        private string _ipAddressOrHostname;
+        private TcpClientConfig _clientConfig;
+        private SslStream? _sslStream;
+        private Stream? _stream;
 
         /// <summary>
         /// Is client connected
@@ -66,8 +74,9 @@ namespace Nager.TcpClient
             {
                 clientConfig = new TcpClientConfig();
             }
+            this._clientConfig = clientConfig;
 
-            this._receiveBuffer = new byte[clientConfig.ReceiveBufferSize];
+            this._receiveBuffer = new byte[this._clientConfig.ReceiveBufferSize];
 
             if (logger == default)
             {
@@ -82,7 +91,7 @@ namespace Nager.TcpClient
                     return;
                 }
 
-                this._stream.Close();
+                this.CloseStream();
             });
 
             this._dataReceiverTask = Task.Run(async () => await this.DataReceiverAsync(this._cancellationTokenSource.Token), this._cancellationTokenSource.Token);
@@ -137,11 +146,11 @@ namespace Nager.TcpClient
             {
                 if (this._stream.CanWrite || this._stream.CanRead || this._stream.CanSeek)
                 {
-                    this._stream?.Close();
+                    this.CloseStream();
                 }
 
                 this._logger.LogTrace($"{nameof(DisposeTcpClientAndStream)} - Dispose stream");
-                this._stream?.Dispose();
+                this.DisposeStream();
             }
 
             if (this._tcpClientInitialized)
@@ -170,8 +179,22 @@ namespace Nager.TcpClient
                 return;
             }
 
-            this._stream = this._tcpClient.GetStream();
+            this._rawStream = this._tcpClient.GetStream();
+            this._stream = this._rawStream;
 
+            if (!string.IsNullOrEmpty(this._clientConfig.RootCACertPath))
+            {
+                _sslStream = new SslStream(this._rawStream, false, ValidateServerCertificate);
+                this._stream = this._sslStream;
+                X509Certificate2Collection certificates = new X509Certificate2Collection();
+                X509Certificate2 certificate = new X509Certificate2(this._clientConfig.RootCACertPath);
+                if (certificates.IndexOf(certificate) < 0)
+                {
+                    certificates.Add(certificate);
+                }                
+                _sslStream.AuthenticateAsClient(this._ipAddressOrHostname, certificates, SslProtocols.Default, false);
+            }
+            
             if (this._keepAliveConfig != null)
             {
                 if (this._tcpClient.SetKeepAlive(this._keepAliveConfig.KeepAliveTime, this._keepAliveConfig.KeepAliveInterval, this._keepAliveConfig.KeepAliveRetryCount))
@@ -183,6 +206,39 @@ namespace Nager.TcpClient
                     this._logger.LogError($"{nameof(PrepareStream)} - Cannot set KeepAlive config");
                 }
             }
+        }
+
+        private void CloseStream()
+        {
+            if (null != _sslStream)
+            {
+                this._sslStream.Close();
+            }
+            if (null != _rawStream)
+            {
+                this._rawStream.Close();
+            }
+            this._stream = null;
+        }
+
+        private void DisposeStream()
+        {
+            if (null != _sslStream)
+            {
+                this._sslStream.Dispose();
+            }
+            if (null != _rawStream)
+            {
+                this._rawStream.Dispose();
+            }
+            this._stream = null;
+        }
+
+        private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            // Implement your custom certificate validation logic here
+            // For example, check if the certificate is issued by a trusted authority
+            return true;
         }
 
         private bool SwitchToConnected()
@@ -233,7 +289,7 @@ namespace Nager.TcpClient
             int port,
             int connectTimeoutInMilliseconds = 2000)
         {
-            ipAddressOrHostname = ipAddressOrHostname ?? throw new ArgumentNullException(nameof(ipAddressOrHostname));
+            this._ipAddressOrHostname = ipAddressOrHostname ?? throw new ArgumentNullException(nameof(ipAddressOrHostname));
 
             if (this._isConnected)
             {
@@ -259,7 +315,7 @@ namespace Nager.TcpClient
                     this._tcpClient = new System.Net.Sockets.TcpClient();
 
                     this._logger.LogDebug($"{nameof(Connect)} - Connecting");
-                    IAsyncResult asyncResult = this._tcpClient.BeginConnect(ipAddressOrHostname, port, null, null);
+                    IAsyncResult asyncResult = this._tcpClient.BeginConnect(this._ipAddressOrHostname, port, null, null);
                     var waitHandle = asyncResult.AsyncWaitHandle;
 
                     //Try connect with timeout
@@ -317,7 +373,7 @@ namespace Nager.TcpClient
             int port,
             CancellationToken cancellationToken = default)
         {
-            ipAddressOrHostname = ipAddressOrHostname ?? throw new ArgumentNullException(nameof(ipAddressOrHostname));
+            this._ipAddressOrHostname = ipAddressOrHostname ?? throw new ArgumentNullException(nameof(ipAddressOrHostname));
 
             if (this._isConnected)
             {
@@ -330,7 +386,7 @@ namespace Nager.TcpClient
 
             try
             {
-                await this._tcpClient.ConnectAsync(ipAddressOrHostname, port, cancellationToken).ConfigureAwait(false);
+                await this._tcpClient.ConnectAsync(this._ipAddressOrHostname, port, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
@@ -361,7 +417,7 @@ namespace Nager.TcpClient
             CancellationToken cancellationToken = default
             )
         {
-            ipAddressOrHostname = ipAddressOrHostname ?? throw new ArgumentNullException(nameof(ipAddressOrHostname));
+            this._ipAddressOrHostname = ipAddressOrHostname ?? throw new ArgumentNullException(nameof(ipAddressOrHostname));
 
             if (this._isConnected)
             {
@@ -376,7 +432,7 @@ namespace Nager.TcpClient
             {
                 var cancellationCompletionSource = new TaskCompletionSource<bool>();
 
-                var task = this._tcpClient.ConnectAsync(ipAddressOrHostname, port);
+                var task = this._tcpClient.ConnectAsync(this._ipAddressOrHostname, port);
                 using (cancellationToken.Register(() => cancellationCompletionSource.TrySetResult(true)))
                 {
                     if (task != await Task.WhenAny(task, cancellationCompletionSource.Task))

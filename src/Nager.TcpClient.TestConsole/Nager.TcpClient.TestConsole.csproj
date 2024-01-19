@@ -16,4 +16,10 @@
     <ProjectReference Include="..\Nager.TcpClient\Nager.TcpClient.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="feig-test-root-ca.crt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Authors>Tino Hager</Authors>
-    <Company>nager.at</Company>
-    <Description>A simple TcpClient with asynchronous connect logic. Received data packets are available via a DataReceived event. There are also events for Connected and Disconnected.</Description>
+    <Authors>Joeries</Authors>
+    <Company></Company>
+    <Description>A simple TcpClient with asynchronous connect logic. Received data packets are available via a DataReceived event. There are also events for Connected and Disconnected. Supporting for SSL/TLS added.</Description>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -15,14 +15,22 @@
     <PackageIcon>icon.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/nager/Nager.TcpClient</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/joeries/Nager.TcpClient</PackageProjectUrl>
     <PackageTags>tcpclient tcp keepalive cross-platform</PackageTags>
     
-    <RepositoryUrl>https://github.com/nager/Nager.TcpClient</RepositoryUrl>
+    <RepositoryUrl>https://github.com/joeries/Nager.TcpClient</RepositoryUrl>
 	  
     <TargetFrameworks>netstandard2.0;netstandard2.1;net6</TargetFrameworks>
 
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
+
+    <Title>Nager.TcpClient with SSL/TLS supported</Title>
+
+    <PackageReleaseNotes>Add supporting for SSL/TLS.</PackageReleaseNotes>
+
+    <PackageId>Joeries.$(AssemblyName)</PackageId>
+
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
