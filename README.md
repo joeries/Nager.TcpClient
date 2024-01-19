@@ -2,16 +2,16 @@
 
 <img src="https://raw.githubusercontent.com/nager/Nager.TcpClient/main/doc/icon.png" width="150" title="Nager TcpClient" alt="Nager TcpClient" align="left">
 
-A simple **TcpClient** with asynchronous connect logic. Received data packets are available via a `DataReceived` event. There are also events for `Connected` and `Disconnected`. Additionally there is the possibility to enable `TcpKeepAlive`. The library offers the possibility to pass an `ILogger` for logging. There are extensive tests for all major operating systems (ubuntu, windows, macos).
+A simple **TcpClient** with asynchronous connect logic and SSL/TLS supported. Received data packets are available via a `DataReceived` event. There are also events for `Connected` and `Disconnected`. Additionally there is the possibility to enable `TcpKeepAlive`. The library offers the possibility to pass an `ILogger` for logging. There are extensive tests for all major operating systems (ubuntu, windows, macos).
 
 <br>
 <br>
 
 ## How can I use it?
 
-The package is available via [NuGet](https://www.nuget.org/packages/Nager.TcpClient)
+The package is available via [NuGet](https://www.nuget.org/packages/Joeries.Nager.TcpClient)
 ```
-PM> install-package Nager.TcpClient
+PM> install-package Joeries.Nager.TcpClient
 ```
 
 ## Examples of use
