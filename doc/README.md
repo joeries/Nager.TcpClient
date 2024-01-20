@@ -15,7 +15,7 @@ void OnDataReceived(byte[] receivedData)
 
 using var cancellationTokenSource = new CancellationTokenSource(1000);
 
-using var tcpClient = new TcpClient();
+using var tcpClient = new TcpClient(clientConfig: new TcpClientConfig { CertPath = "", CertPassword = "", SSLProtocol = System.Security.Authentication.SslProtocols.Tls12 });
 tcpClient.DataReceived += OnDataReceived;
 await tcpClient.ConnectAsync("tcpbin.com", 4242, cancellationTokenSource.Token);
 await tcpClient.SendAsync(new byte[] { 0x01, 0x0A });

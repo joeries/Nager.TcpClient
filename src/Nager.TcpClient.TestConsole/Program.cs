@@ -10,7 +10,7 @@ using var loggerFactory = LoggerFactory.Create(builder =>
 var logger = loggerFactory.CreateLogger<TcpClient>();
 
 
-var tcpClient = new TcpClient(logger: logger, keepAliveConfig: new TcpClientKeepAliveConfig(), clientConfig: new TcpClientConfig { RootCACertPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "feig-test-root-ca.crt") });
+var tcpClient = new TcpClient(logger: logger, keepAliveConfig: new TcpClientKeepAliveConfig(), clientConfig: new TcpClientConfig { CertPath = "", CertPassword = "", SSLProtocol = System.Security.Authentication.SslProtocols.Tls12 });
 tcpClient.Disconnected += () => Console.WriteLine("Disconnected");
 if (!await tcpClient.ConnectAsync("10.0.100.108", 22001))
 {

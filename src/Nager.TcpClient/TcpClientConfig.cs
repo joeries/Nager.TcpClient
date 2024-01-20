@@ -1,4 +1,6 @@
-﻿namespace Nager.TcpClient
+﻿using System.Security.Authentication;
+
+namespace Nager.TcpClient
 {
     /// <summary>
     /// TcpClient Config
@@ -10,8 +12,13 @@
         /// </summary>
         public int ReceiveBufferSize { get; set; } = 1024;
         /// <summary>
-        /// Absolute Path of Root CA Cert
+        /// Absolute Path of Cert
         /// </summary>
-        public string RootCACertPath { get; set; }
+        public string CertPath { get; set; }
+        /// <summary>
+        /// Password of Cert
+        /// </summary>
+        public string CertPassword { get; set; }
+        public SslProtocols SSLProtocol { get; set; } = SslProtocols.None;
     }
 }

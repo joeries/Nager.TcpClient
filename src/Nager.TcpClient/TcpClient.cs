@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
+using System.Collections;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -182,17 +184,17 @@ namespace Nager.TcpClient
             this._rawStream = this._tcpClient.GetStream();
             this._stream = this._rawStream;
 
-            if (!string.IsNullOrEmpty(this._clientConfig.RootCACertPath))
+            if (this._clientConfig.SSLProtocol != SslProtocols.None)
             {
-                _sslStream = new SslStream(this._rawStream, false, ValidateServerCertificate);
+                _sslStream = new SslStream(this._rawStream, true, ValidateServerCertificate);
                 this._stream = this._sslStream;
                 X509Certificate2Collection certificates = new X509Certificate2Collection();
-                X509Certificate2 certificate = new X509Certificate2(this._clientConfig.RootCACertPath);
-                if (certificates.IndexOf(certificate) < 0)
+                if (!string.IsNullOrEmpty(this._clientConfig.CertPath))
                 {
+                    X509Certificate2 certificate = new X509Certificate2(this._clientConfig.CertPath, this._clientConfig.CertPassword);
                     certificates.Add(certificate);
-                }                
-                _sslStream.AuthenticateAsClient(this._ipAddressOrHostname, certificates, SslProtocols.Default, false);
+                }
+                _sslStream.AuthenticateAsClient("*", certificates, this._clientConfig.SSLProtocol, false);
             }
             
             if (this._keepAliveConfig != null)
@@ -225,11 +227,14 @@ namespace Nager.TcpClient
         {
             if (null != _sslStream)
             {
+                ((Hashtable)Assembly.GetAssembly(typeof(SslStream)).GetType("System.Net.Security.SslSessionsCache").GetField("s_CachedCreds", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null)).Clear();
                 this._sslStream.Dispose();
+                this._sslStream = null;
             }
             if (null != _rawStream)
             {
                 this._rawStream.Dispose();
+                this._rawStream = null;
             }
             this._stream = null;
         }
@@ -529,7 +534,7 @@ namespace Nager.TcpClient
 
                 if (!this._tcpClient.Connected)
                 {
-                    this.SwitchToDisconnected();
+                    //this.SwitchToDisconnected();
                     this._logger.LogTrace($"{nameof(DataReceiverAsync)} - Client not connected");
 
                     await Task
@@ -567,13 +572,13 @@ namespace Nager.TcpClient
                         {
                             if (this.IsKnownException(task.Exception))
                             {
-                                this.SwitchToDisconnected();
+                                //this.SwitchToDisconnected();
                                 return true;
                             }
 
                             this._logger.LogWarning($"{nameof(DataReceiverAsync)} - Faulted");
 
-                            this.SwitchToDisconnected();
+                            //this.SwitchToDisconnected();
                             return false;
                         }
 
@@ -591,7 +596,7 @@ namespace Nager.TcpClient
                             //In this situation, the Docker Container tcp conncection is in a bad state
                             //infinite loop
 
-                            this.SwitchToDisconnected();
+                            //this.SwitchToDisconnected();
                             return true;
                         }
 

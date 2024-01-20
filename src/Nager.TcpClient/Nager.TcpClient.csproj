@@ -22,11 +22,11 @@
 	  
     <TargetFrameworks>netstandard2.0;netstandard2.1;net6</TargetFrameworks>
 
-    <Version>1.1.2</Version>
+    <Version>1.1.3</Version>
 
     <Title>Nager.TcpClient with SSL/TLS supported</Title>
 
-    <PackageReleaseNotes>Add supporting for SSL/TLS.</PackageReleaseNotes>
+    <PackageReleaseNotes>Fix connection bugs.</PackageReleaseNotes>
 
     <PackageId>Joeries.$(AssemblyName)</PackageId>
 
